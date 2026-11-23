@@ -111,7 +111,7 @@ BF_ENTER bf_verify,1080
  cmp eax,r15d
  jae .bad_pc
  mov edx,esi
- call .merge
+ call bf_merge
  jc .bad_pc
 .advance:
  inc ebx
@@ -128,12 +128,21 @@ BF_ENTER bf_verify,1080
  cmp rax,r15
  jae .bad_pc
  mov edx,esi
- call .merge
+ call bf_merge
  jc .bad_pc
  cmp ecx,BF_JUMP
  je .advance
  jmp .next
-.merge:
+.bad_pc:
+ test r14,r14
+ jz .bad_header
+ mov [r14+4],ebx
+.bad_header:
+ mov eax,1
+.done:
+BF_LEAVE bf_verify,1080
+; Separate leaf range: a call return address must not use the parent's unwind.
+bf_merge:
  mov r9b,[r12+rax]
  cmp r9b,255
  je .assign
@@ -148,12 +157,4 @@ BF_ENTER bf_verify,1080
 .conflict:
  stc
  ret
-.bad_pc:
- test r14,r14
- jz .bad_header
- mov [r14+4],ebx
-.bad_header:
- mov eax,1
-.done:
-BF_LEAVE bf_verify,1080
 BF_NOEXEC_STACK

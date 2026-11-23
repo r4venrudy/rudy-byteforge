@@ -4,6 +4,7 @@ from pathlib import Path
 import struct
 import sys
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 
 LIBRARY=Path(sys.argv.pop(1)).resolve()
 core=C.CDLL(str(LIBRARY))
@@ -93,6 +94,21 @@ class Execute(unittest.TestCase):
         self.assertEqual(evaluate(b'bad'),(1,0))
 
 class Compile(unittest.TestCase):
+    def test_capacity_and_reentrancy(self):
+        for capacity,status in ((0,4),(15,4),(16,4),(47,4),(48,0),(49,0)):
+            buffer=C.create_string_buffer(b'X'*96,96);info=CompileInfo()
+            result=core.bf_compile(b'1',1,buffer,capacity,C.byref(info))
+            self.assertEqual(result,status)
+            self.assertEqual(buffer.raw[capacity:],b'X'*(96-capacity))
+            if status: self.assertEqual(info.size,0)
+        self.assertEqual(compile_source(' '*8193)[0],3)
+        self.assertEqual(compile_source('1'+'+1'*1023)[0],4)
+        def work(index):
+            text=f'len >= 1 && (u8(0) + {index}) == {index+7}'
+            status,data,_=compile_source(text)
+            return status,evaluate(data,b'\x07')
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            self.assertTrue(all(item==(0,(0,1)) for item in pool.map(work,range(400))))
     def test_short_circuit(self):
         for text,value in (('0 && u64be(0)',0),('1 || u64be(0)',1),('7 && 8',1),('0 || 7',1),('2 || 3 && 0',1),('0 || 1 && 0',0),('len >= 2 && u16be(0) == 0x1234',0)):
             status,data,position=compile_source(text)

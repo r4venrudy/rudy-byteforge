@@ -631,13 +631,14 @@ bf_binary:
  ret
 
 ; Internal helpers use only volatile registers and the immutable context base.
-bf_boolean:
+BF_ENTER bf_boolean,40,0
  mov ecx,BF_NOT
  xor eax,eax
  call bf_emit
  mov ecx,BF_NOT
  xor eax,eax
- jmp bf_emit
+ call bf_emit
+BF_LEAVE bf_boolean,40
 bf_patch:
  cmp dword [rbp+C_ERROR],0
  jne .done
