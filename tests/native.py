@@ -13,6 +13,16 @@ core.bf_verify.argtypes=[C.c_void_p,C.c_size_t,C.POINTER(Info)]
 core.bf_verify.restype=C.c_int
 core.bf_eval.argtypes=[C.c_void_p,C.c_size_t,C.c_void_p,C.c_size_t,C.POINTER(C.c_uint64)]
 core.bf_eval.restype=C.c_int
+class CompileInfo(C.Structure):
+    _fields_=[('size',C.c_size_t),('error_offset',C.c_uint32),('reserved',C.c_uint32)]
+core.bf_compile.argtypes=[C.c_void_p,C.c_size_t,C.c_void_p,C.c_size_t,C.POINTER(CompileInfo)]
+core.bf_compile.restype=C.c_int
+
+def compile_source(text,capacity=16400):
+    text=text.encode() if isinstance(text,str) else text
+    output=C.create_string_buffer(max(capacity,1));info=CompileInfo()
+    status=core.bf_compile(text,len(text),output,capacity,C.byref(info))
+    return status,output.raw[:info.size],info.error_offset
 
 def evaluate(data,payload=b''):
     result=C.c_uint64(999)
@@ -81,5 +91,16 @@ class Execute(unittest.TestCase):
         self.assertEqual(evaluate(program((1,0),(20,0),(23,0))),(0,1))
         self.assertEqual(evaluate(program((1,0),(24,0),(23,0))),(0,mask))
         self.assertEqual(evaluate(b'bad'),(1,0))
+
+class Compile(unittest.TestCase):
+    def test_literals(self):
+        for text,value in (('0',0),('18446744073709551615',(1<<64)-1),('0xFF',255),('  len\n',3)):
+            status,data,_=compile_source(text)
+            self.assertEqual(status,0)
+            self.assertEqual(verify(data)[0],0)
+            self.assertEqual(evaluate(data,b'abc'),(0,value))
+        for text in ('','0x','18446744073709551616','0x10000000000000000','unknown','1\x00'):
+            self.assertEqual(compile_source(text)[0],3)
+        self.assertEqual(compile_source('1',16)[0],4)
 
 if __name__=='__main__': unittest.main()
