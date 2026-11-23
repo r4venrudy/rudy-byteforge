@@ -33,4 +33,8 @@ if windows:
 else: assert binary[:6]==b'\x7fELF\x02\x01' and struct.unpack_from('<H',binary,18)[0]==62
 subprocess.run([sys.executable,ROOT/'tests/integration.py',folder/('bin/byteforge.exe' if windows else 'bin/byteforge'),folder],check=True)
 subprocess.run([sys.executable,ROOT/'tests/native.py',folder/('lib/byteforge.dll' if windows else 'lib/libbyteforge.so')],check=True)
+compiler=sys.argv[2] if len(sys.argv)>2 else 'gcc'
+consumer=folder/('embed.exe' if windows else 'embed')
+subprocess.run([compiler,'-O2','-I',folder/'include',folder/'examples/embed.c',folder/'lib/libbyteforge.a','-o',consumer],check=True)
+subprocess.run([consumer],check=True)
 print('Native release package and extracted binaries verified')

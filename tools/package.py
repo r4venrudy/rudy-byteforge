@@ -20,7 +20,7 @@ def entries(platform):
     return files
 def content(path):
     value=path.read_bytes()
-    return value.replace(b'\r\n',b'\n') if path.suffix in ('.md','.svg','.h','.bf') or path.name=='LICENSE' else value
+    return value.replace(b'\r\n',b'\n') if path.suffix in ('.md','.svg','.h','.bf','.c') or path.name=='LICENSE' else value
 def main():
     parser=ArgumentParser(description=__doc__);parser.add_argument('--platform',choices=('windows-x64','linux-x64'),required=True);args=parser.parse_args()
     folder=ROOT/'dist';folder.mkdir(exist_ok=True)
