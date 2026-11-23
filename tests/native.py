@@ -11,6 +11,13 @@ class Info(C.Structure):
     _fields_=[('max_stack',C.c_uint32),('error_pc',C.c_uint32)]
 core.bf_verify.argtypes=[C.c_void_p,C.c_size_t,C.POINTER(Info)]
 core.bf_verify.restype=C.c_int
+core.bf_eval.argtypes=[C.c_void_p,C.c_size_t,C.c_void_p,C.c_size_t,C.POINTER(C.c_uint64)]
+core.bf_eval.restype=C.c_int
+
+def evaluate(data,payload=b''):
+    result=C.c_uint64(999)
+    status=core.bf_eval(data,len(data),payload,len(payload),C.byref(result))
+    return status,result.value
 
 def program(*instructions):
     return struct.pack('<4sHHII',b'BFG1',1,0,len(instructions),0)+b''.join(struct.pack('<B7xQ',op,arg) for op,arg in instructions)
@@ -47,5 +54,16 @@ class Verify(unittest.TestCase):
             self.assertEqual(verify(program(*rows))[0],1)
         rows=[(1,0)]*65+[(12,0)]*64+[(23,0)]
         self.assertEqual(verify(program(*rows))[0],1)
+
+class Execute(unittest.TestCase):
+    def test_scalars(self):
+        mask=(1<<64)-1
+        for op,expected in ((7,3&5),(8,3|5),(9,3^5),(10,3<<5),(11,3>>5),(12,8),(13,(3-5)&mask),(14,0),(15,1),(16,1),(17,1),(18,0),(19,0)):
+            self.assertEqual(evaluate(program((1,3),(1,5),(op,0),(23,0))),(0,expected))
+        self.assertEqual(evaluate(program((2,0),(23,0)),b'abc'),(0,3))
+        for op in (10,11): self.assertEqual(evaluate(program((1,7),(1,64),(op,0),(23,0))),(0,0))
+        self.assertEqual(evaluate(program((1,0),(20,0),(23,0))),(0,1))
+        self.assertEqual(evaluate(program((1,0),(24,0),(23,0))),(0,mask))
+        self.assertEqual(evaluate(b'bad'),(1,0))
 
 if __name__=='__main__': unittest.main()
