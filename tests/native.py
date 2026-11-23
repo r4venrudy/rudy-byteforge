@@ -56,6 +56,15 @@ class Verify(unittest.TestCase):
         self.assertEqual(verify(program(*rows))[0],1)
 
 class Execute(unittest.TestCase):
+    def test_bounded_loads(self):
+        payload=bytes(range(1,17))
+        for op,width in ((3,1),(4,2),(5,4),(6,8)):
+            for offset in (0,1,len(payload)-width):
+                expected=int.from_bytes(payload[offset:offset+width],'big')
+                self.assertEqual(evaluate(program((op,offset),(23,0)),payload),(0,expected))
+            for offset in (len(payload)-width+1,len(payload),(1<<64)-1):
+                self.assertEqual(evaluate(program((op,offset),(23,0)),payload),(2,0))
+        self.assertEqual(evaluate(program((3,0),(23,0))),(2,0))
     def test_scalars(self):
         mask=(1<<64)-1
         for op,expected in ((7,3&5),(8,3|5),(9,3^5),(10,3<<5),(11,3>>5),(12,8),(13,(3-5)&mask),(14,0),(15,1),(16,1),(17,1),(18,0),(19,0)):

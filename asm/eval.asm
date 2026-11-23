@@ -50,6 +50,10 @@ BF_ENTER bf_eval,568
  je .constant
  cmp ecx,BF_LEN
  je .length
+ cmp ecx,BF_U8
+ jb .invalid
+ cmp ecx,BF_U64BE
+ jbe .load
  cmp ecx,BF_AND
  jb .invalid
  cmp ecx,BF_GE
@@ -71,6 +75,45 @@ BF_ENTER bf_eval,568
  jmp .push
 .length:
  mov rax,rbx
+ jmp .push
+.load:
+ mov edx,1
+ cmp ecx,BF_U8
+ je .bounds
+ mov edx,2
+ cmp ecx,BF_U16BE
+ je .bounds
+ mov edx,4
+ cmp ecx,BF_U32BE
+ je .bounds
+ mov edx,8
+.bounds:
+ cmp r8,rbx
+ ja .short
+ mov r9,rbx
+ sub r9,r8 ; subtraction avoids offset+width overflow
+ cmp r9,rdx
+ jb .short
+ lea rdx,[r14+r8]
+ cmp ecx,BF_U8
+ je .byte
+ cmp ecx,BF_U16BE
+ je .word
+ cmp ecx,BF_U32BE
+ je .dword
+ mov rax,[rdx]
+ bswap rax
+ jmp .push
+.byte:
+ movzx eax,byte [rdx]
+ jmp .push
+.word:
+ movzx eax,word [rdx]
+ xchg al,ah
+ jmp .push
+.dword:
+ mov eax,[rdx]
+ bswap eax
 .push:
  cmp esi,BF_MAX_STACK
  jae .invalid
@@ -170,6 +213,9 @@ BF_ENTER bf_eval,568
  jmp .step
 .argument:
  mov eax,5
+ jmp .done
+.short:
+ mov eax,2
  jmp .done
 .invalid:
  mov eax,1
