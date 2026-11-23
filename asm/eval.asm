@@ -54,6 +54,10 @@ BF_ENTER bf_eval,568
  jb .invalid
  cmp ecx,BF_U64BE
  jbe .load
+ cmp ecx,BF_JUMP
+ je .jump
+ cmp ecx,BF_JZ
+ je .conditional
  cmp ecx,BF_AND
  jb .invalid
  cmp ecx,BF_GE
@@ -210,6 +214,19 @@ BF_ENTER bf_eval,568
  jmp .replace
 .next:
  inc edi
+ jmp .step
+.conditional:
+ test esi,esi
+ jz .invalid
+ dec esi
+ cmp qword [rbp+rsi*8],0
+ jne .next
+.jump:
+ cmp r8,rdi
+ jbe .invalid
+ cmp r8,r13
+ jae .invalid
+ mov rdi,r8
  jmp .step
 .argument:
  mov eax,5

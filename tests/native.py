@@ -56,6 +56,13 @@ class Verify(unittest.TestCase):
         self.assertEqual(verify(program(*rows))[0],1)
 
 class Execute(unittest.TestCase):
+    def test_branches_and_short_circuit(self):
+        for condition,expected in ((0,9),(1,7),(42,7)):
+            rows=((1,condition),(22,4),(1,7),(21,5),(1,9),(23,0))
+            self.assertEqual(evaluate(program(*rows)),(0,expected))
+        guarded=program((2,0),(1,8),(19,0),(22,6),(6,0),(21,7),(1,0),(23,0))
+        self.assertEqual(evaluate(guarded,b'x'),(0,0))
+        self.assertEqual(evaluate(guarded,b'abcdefgh'),(0,int.from_bytes(b'abcdefgh','big')))
     def test_bounded_loads(self):
         payload=bytes(range(1,17))
         for op,width in ((3,1),(4,2),(5,4),(6,8)):
