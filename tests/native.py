@@ -39,6 +39,14 @@ def verify(data):
     return result,info
 
 class Verify(unittest.TestCase):
+    def test_profile_boundaries(self):
+        longest=program((1,1),*([(20,0)]*1022),(23,0))
+        self.assertEqual(verify(longest)[0],0)
+        self.assertEqual(evaluate(longest),(0,1))
+        self.assertEqual(verify(program((1,1),*([(20,0)]*1023),(23,0)))[0],1)
+        deepest=program(*([(1,1)]*64),*([(12,0)]*63),(23,0))
+        self.assertEqual(verify(deepest)[1].max_stack,64)
+        self.assertEqual(evaluate(deepest),(0,64))
     def test_control_flow(self):
         rows=((1,1),(22,4),(1,7),(21,5),(1,9),(23,0))
         self.assertEqual(verify(program(*rows))[0],0)

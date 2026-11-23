@@ -1,0 +1,77 @@
+name: Build and verify
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            shell: bash
+            platform: linux-x64
+            library: libbyteforge.so
+            executable: byteforge
+          - os: windows-2022
+            shell: 'msys2 {0}'
+            platform: windows-x64
+            library: byteforge.dll
+            executable: byteforge.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.13'
+      - name: Install Linux assembler
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y nasm
+      - name: Install native Windows toolchain
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@3c51bf698df1e37b2261f53cb67797b97761185c # v2
+        with:
+          msystem: UCRT64
+          path-type: inherit
+          update: true
+          install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm
+      - name: Assemble and link
+        shell: ${{ matrix.shell }}
+        run: |
+          set -euo pipefail
+          nasm -v
+          gcc --version
+          python tools/build.py --cc gcc --ar ar
+      - name: Native semantics, capacity and concurrency
+        shell: ${{ matrix.shell }}
+        run: python tests/native.py build/${{ matrix.library }}
+      - name: Independent compiler and bytecode verification oracles
+        shell: ${{ matrix.shell }}
+        run: python tests/differential.py build/${{ matrix.library }}
+      - name: Guard pages and public calling conventions
+        shell: ${{ matrix.shell }}
+        run: python tools/check.py --cc gcc
+      - name: Compile, inspect and scan examples
+        shell: ${{ matrix.shell }}
+        run: python tests/integration.py build/${{ matrix.executable }} .
+      - name: Package and verify extracted native binaries
+        shell: ${{ matrix.shell }}
+        run: |
+          set -euo pipefail
+          python tools/package.py --platform ${{ matrix.platform }}
+          python tests/package.py ${{ matrix.platform }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: byteforge-${{ matrix.platform }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+            dist/SHA256SUMS.txt
+          if-no-files-found: error

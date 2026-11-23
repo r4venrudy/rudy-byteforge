@@ -87,7 +87,7 @@ python tools/check.py --nasm nasm --cc clang
 python tests/integration.py build/byteforge .
 ```
 
-On Windows use `build/byteforge.dll` and `build/byteforge.exe`. Put your NASM and compiler executables on PATH, or provide their full paths to the build/check scripts. CI exercises both native platforms, including guard pages and register-preservation probes. See [the architecture and API contract](docs/FORMAT.md) for embedding details.
+On Windows use `build/byteforge.dll` and `build/byteforge.exe`. Put your NASM and compiler executables on PATH, or provide their full paths to the build/check scripts. CI exercises both native platforms, including guard pages and register-preservation probes. Run python tools/package.py --platform linux-x64 (or windows-x64) after testing to create an archive and checksum manifest. Packages include lib/libbyteforge.a, the shared library and include/byteforge.h. See [the architecture and API contract](docs/FORMAT.md) for embedding details.
 
 Validation includes 2500 seeded expression comparisons against an independent Python evaluator, 5000 bytecode mutations compared with an independent verifier, 400 concurrent compile/evaluate calls, explicit capacity boundaries, real guard-page boundaries, and three public-API register probes. These are bounded test samples, not a proof that all possible inputs are correct. Assembly is not instrumented by C sanitizers.
 
