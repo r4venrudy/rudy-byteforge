@@ -3,6 +3,7 @@ bits 64
 default rel
 %include "abi.inc"
 %include "opcodes.inc"
+extern bf_verify
 %define C_SRC 0
 %define C_LEN 8
 %define C_POS 16
@@ -88,9 +89,20 @@ BF_ENTER bf_compile,168
  mov dword [r14+12],0
  shl rax,4
  add rax,16
- mov [rbx],rax
+ mov r13,rax
+ mov A1,r14
+ mov A2,r13
+ xor A3,A3
+ BF_EXTERN_CALL bf_verify
+ test eax,eax
+ jnz .internal_failure
+ mov [rbx],r13
  xor eax,eax
  jmp .done
+.internal_failure:
+ mov qword [r14],0
+ mov dword [rbp+C_ERROR],1
+ jmp .failure
 .syntax:
  mov eax,3
  call bf_error
@@ -377,6 +389,8 @@ BF_ENTER bf_expr,72,0
  jb .done
  mov r13d,edx
  mov r14d,ecx
+ cmp r13d,100
+ jae .logical
  call bf_lex
  lea ecx,[r14+1]
  call bf_expr
@@ -385,6 +399,55 @@ BF_ENTER bf_expr,72,0
  mov ecx,r13d
  xor eax,eax
  call bf_emit
+ jmp .loop
+.logical:
+ mov [rsp+32],r14d ; RHS precedence survives recursive calls
+ mov r14d,[rbp+C_COUNT]
+ mov ecx,BF_JZ
+ xor eax,eax
+ call bf_emit
+ cmp r13d,100
+ je .logical_and
+ ; OR: a true left value yields 1 and skips the entire right side.
+ mov ecx,BF_CONST
+ mov eax,1
+ call bf_emit
+ mov r15d,[rbp+C_COUNT]
+ mov ecx,BF_JUMP
+ xor eax,eax
+ call bf_emit
+ mov eax,[rbp+C_COUNT]
+ mov ecx,r14d
+ call bf_patch
+ call bf_lex
+ mov ecx,[rsp+32]
+ inc ecx
+ call bf_expr
+ call bf_boolean
+ mov eax,[rbp+C_COUNT]
+ mov ecx,r15d
+ call bf_patch
+ jmp .loop
+.logical_and:
+ ; AND: a false left value skips the right side and supplies zero.
+ call bf_lex
+ mov ecx,[rsp+32]
+ inc ecx
+ call bf_expr
+ call bf_boolean
+ mov r15d,[rbp+C_COUNT]
+ mov ecx,BF_JUMP
+ xor eax,eax
+ call bf_emit
+ mov eax,[rbp+C_COUNT]
+ mov ecx,r14d
+ call bf_patch
+ mov ecx,BF_CONST
+ xor eax,eax
+ call bf_emit
+ mov eax,[rbp+C_COUNT]
+ mov ecx,r15d
+ call bf_patch
  jmp .loop
 .syntax:
  mov eax,3
@@ -490,6 +553,10 @@ BF_LEAVE bf_unary,40
 bf_binary:
  xor ecx,ecx
  xor edx,edx
+ cmp eax,T_OR
+ je .logical_or
+ cmp eax,T_AND
+ je .logical_and
  cmp eax,'|'
  je .or
  cmp eax,'^'
@@ -556,4 +623,32 @@ bf_binary:
 .sub: mov ecx,9
  mov edx,BF_SUB
  ret
+.logical_or: mov ecx,1
+ mov edx,101
+ ret
+.logical_and: mov ecx,2
+ mov edx,100
+ ret
+
+; Internal helpers use only volatile registers and the immutable context base.
+bf_boolean:
+ mov ecx,BF_NOT
+ xor eax,eax
+ call bf_emit
+ mov ecx,BF_NOT
+ xor eax,eax
+ jmp bf_emit
+bf_patch:
+ cmp dword [rbp+C_ERROR],0
+ jne .done
+ cmp ecx,[rbp+C_COUNT]
+ jae .bad
+ mov r8,rcx
+ shl r8,4
+ add r8,[rbp+C_OUT]
+ mov [r8+24],rax
+.done: ret
+.bad:
+ mov eax,3
+ jmp bf_error
 BF_NOEXEC_STACK
