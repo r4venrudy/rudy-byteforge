@@ -13,12 +13,10 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            shell: bash
             platform: linux-x64
             library: libbyteforge.so
             executable: byteforge
           - os: windows-2022
-            shell: 'msys2 {0}'
             platform: windows-x64
             library: byteforge.dll
             executable: byteforge.exe
@@ -35,6 +33,7 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y nasm
       - name: Install native Windows toolchain
+        id: msys
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@3c51bf698df1e37b2261f53cb67797b97761185c # v2
         with:
@@ -42,27 +41,31 @@ jobs:
           path-type: inherit
           update: true
           install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-nasm
+      - name: Select native Windows compiler tools
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: '"${{ steps.msys.outputs.msys2-location }}\ucrt64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append'
       - name: Assemble and link
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: |
           set -euo pipefail
           nasm -v
           gcc --version
           python tools/build.py --cc gcc --ar ar
       - name: Native semantics, capacity and concurrency
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: python tests/native.py build/${{ matrix.library }}
       - name: Independent compiler and bytecode verification oracles
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: python tests/differential.py build/${{ matrix.library }}
       - name: Guard pages and public calling conventions
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: python tools/check.py --cc gcc
       - name: Compile, inspect and scan examples
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: python tests/integration.py build/${{ matrix.executable }} .
       - name: Package and verify extracted native binaries
-        shell: ${{ matrix.shell }}
+        shell: bash
         run: |
           set -euo pipefail
           python tools/package.py --platform ${{ matrix.platform }}
