@@ -34,10 +34,19 @@ BF_ENTER bf_verify,1080
  cmp rax,r13
  jne .bad_header
  lea rbp,[r12+16]
+ lea r12,[rsp+32] ; one byte of abstract stack state per instruction
+ mov rdi,r12
+ mov ecx,BF_MAX_INSTRUCTIONS
+ mov eax,255
+ rep stosb
+ mov byte [r12],0
  xor ebx,ebx ; instruction index
  xor esi,esi ; incoming stack depth
  xor r13d,r13d ; maximum stack depth
 .instruction:
+ movzx esi,byte [r12+rbx]
+ cmp esi,255
+ je .bad_pc ; hidden/unreachable instructions are outside the format
  mov eax,ebx
  shl rax,4
  lea r10,[rbp+rax]
@@ -53,6 +62,10 @@ BF_ENTER bf_verify,1080
  cmp ecx,BF_U64BE
  jbe .push
 .not_load:
+ cmp ecx,BF_JUMP
+ je .jump
+ cmp ecx,BF_JZ
+ je .conditional
  test rax,rax
  jnz .bad_pc
  cmp ecx,BF_LEN
@@ -94,9 +107,47 @@ BF_ENTER bf_verify,1080
  cmp esi,r13d
  cmova r13d,esi
 .next:
+ lea eax,[rbx+1]
+ cmp eax,r15d
+ jae .bad_pc
+ mov edx,esi
+ call .merge
+ jc .bad_pc
+.advance:
  inc ebx
  cmp ebx,r15d
  jb .instruction
+ jmp .bad_pc
+.conditional:
+ test esi,esi
+ jz .bad_pc
+ dec esi
+.jump:
+ cmp rax,rbx
+ jbe .bad_pc
+ cmp rax,r15
+ jae .bad_pc
+ mov edx,esi
+ call .merge
+ jc .bad_pc
+ cmp ecx,BF_JUMP
+ je .advance
+ jmp .next
+.merge:
+ mov r9b,[r12+rax]
+ cmp r9b,255
+ je .assign
+ cmp r9b,dl
+ jne .conflict
+ clc
+ ret
+.assign:
+ mov [r12+rax],dl
+ clc
+ ret
+.conflict:
+ stc
+ ret
 .bad_pc:
  test r14,r14
  jz .bad_header

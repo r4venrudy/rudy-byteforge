@@ -21,6 +21,17 @@ def verify(data):
     return result,info
 
 class Verify(unittest.TestCase):
+    def test_control_flow(self):
+        rows=((1,1),(22,4),(1,7),(21,5),(1,9),(23,0))
+        self.assertEqual(verify(program(*rows))[0],0)
+        for bad in (
+            ((1,1),(21,1),(23,0)),
+            ((1,1),(21,99),(23,0)),
+            ((22,2),(1,1),(23,0)),
+            ((1,1),(21,3),(1,2),(23,0)),
+            ((1,1),(22,5),(1,1),(1,2),(21,6),(2,0),(23,0)),
+        ):
+            self.assertEqual(verify(program(*bad))[0],1)
     def test_structure(self):
         data=program((1,7),(23,0))
         result,info=verify(data)
