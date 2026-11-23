@@ -1,0 +1,13 @@
+* text=auto
+*.asm text eol=lf
+*.inc text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.py text eol=lf
+*.bf text eol=lf
+*.bin binary
+*.pcap binary
+*.bfg binary
+# Language statistics describe the shipped native core, not its build/test tools.
+/tests/** linguist-detectable=false
+/tools/** linguist-detectable=false

@@ -7,6 +7,8 @@
 
 The Assembly core owns lexical scanning, unsigned-integer overflow checks, precedence parsing, short-circuit branch emission, stack-state verification and execution. A small C interface handles files, console output and capture framing. Python assembles release archives and runs independent tests.
 
+Repository language statistics focus on the shipped native core in `asm/`, `src/` and `include/`. The explicitly excluded `tests/` and `tools/` directories contain validation and build infrastructure. Binary fixtures are marked binary and source files use LF endings for consistent checkouts.
+
 **v0.1.0-preview · NASM Assembly · Windows x64 / Linux x64 · MIT**
 
 ## What makes it useful
@@ -73,7 +75,7 @@ Guard potentially short reads with `len` and `&&`. An executed out-of-bounds rea
 | `run program.bfg input.bin` | Report the unsigned value and whether it is nonzero. |
 | `scan program.bfg capture.pcap` | Report packet/match/truncation counts and zero-based matching indices. |
 
-Exit 0 means success/match, exit 1 means a successfully evaluated non-match, exit 2 means invalid arguments/files/program/source, and exit 3 means an executed short read in `run`. `scan` counts short-input records separately and continues. Malformed capture framing rejects the scan without a success report. JSON schemas use the `rudy.byteforge.* /v1` names shown in output.
+Exit 0 means success/match, exit 1 means a successfully evaluated non-match, exit 2 means invalid arguments/files/program/source, and exit 3 means an executed short read in `run`. `scan` counts short-input records separately and continues. Malformed capture framing rejects the scan without a success report. JSON schemas use the `rudy.byteforge.*/v1` names shown in output.
 
 ## Build and test
 
@@ -87,7 +89,7 @@ python tools/check.py --nasm nasm --cc clang
 python tests/integration.py build/byteforge .
 ```
 
-On Windows use `build/byteforge.dll` and `build/byteforge.exe`. Put your NASM and compiler executables on PATH, or provide their full paths to the build/check scripts. CI exercises both native platforms, including guard pages and register-preservation probes. Run python tools/package.py --platform linux-x64 (or windows-x64) after testing to create an archive and checksum manifest. Packages include lib/libbyteforge.a, the shared library and include/byteforge.h. See [the architecture and API contract](docs/FORMAT.md) for embedding details.
+On Windows use `build/byteforge.dll` and `build/byteforge.exe`. Put your NASM and compiler executables on PATH, or provide their full paths to the build/check scripts. CI exercises both native platforms, including guard pages and register-preservation probes. Run `python tools/package.py --platform linux-x64` (or `windows-x64`) after testing to create an archive and checksum manifest. Packages include `lib/libbyteforge.a`, the shared library and `include/byteforge.h`. The standalone `examples/embed.c` consumer is compiled and executed against both the build and extracted static libraries. See [the architecture and API contract](docs/FORMAT.md) for embedding details.
 
 Validation includes 2500 seeded expression comparisons against an independent Python evaluator, 5000 bytecode mutations compared with an independent verifier, 400 concurrent compile/evaluate calls, explicit capacity boundaries, real guard-page boundaries, and three public-API register probes. These are bounded test samples, not a proof that all possible inputs are correct. Assembly is not instrumented by C sanitizers.
 
