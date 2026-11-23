@@ -69,20 +69,10 @@ BF_ENTER bf_compile,168
  call bf_lex
  cmp dword [rbp+C_ERROR],0
  jne .failure
- mov ecx,[rbp+C_TOKEN]
- cmp ecx,T_NUM
- je .number
- cmp ecx,T_LEN
- jne .syntax
- xor eax,eax
- mov ecx,BF_LEN
- jmp .emit_value
-.number:
- mov rax,[rbp+C_VALUE]
- mov ecx,BF_CONST
-.emit_value:
- call bf_emit
- call bf_lex
+ mov ecx,1
+ call bf_expr
+ cmp dword [rbp+C_ERROR],0
+ jne .failure
  cmp dword [rbp+C_TOKEN],0
  jne .syntax
 .finish_expression:
@@ -184,7 +174,7 @@ bf_lex:
  jb .punctuation
  cmp al,'z'
  jbe .identifier
- jmp .bad
+ jmp .punctuation
 .number:
  mov r10d,10
  cmp al,'0'
@@ -370,4 +360,200 @@ bf_lex:
 .bad:
  mov eax,3
  jmp bf_error
+
+; Precedence climbing. Private functions share the caller-local RBP context.
+BF_ENTER bf_expr,72,0
+ mov r12d,ecx
+ inc dword [rbp+C_DEPTH]
+ cmp dword [rbp+C_DEPTH],64
+ ja .syntax
+ call bf_unary
+.loop:
+ cmp dword [rbp+C_ERROR],0
+ jne .done
+ mov eax,[rbp+C_TOKEN]
+ call bf_binary
+ cmp ecx,r12d
+ jb .done
+ mov r13d,edx
+ mov r14d,ecx
+ call bf_lex
+ lea ecx,[r14+1]
+ call bf_expr
+ cmp dword [rbp+C_ERROR],0
+ jne .done
+ mov ecx,r13d
+ xor eax,eax
+ call bf_emit
+ jmp .loop
+.syntax:
+ mov eax,3
+ call bf_error
+.done:
+ dec dword [rbp+C_DEPTH]
+ mov eax,[rbp+C_ERROR]
+BF_LEAVE bf_expr,72
+
+BF_ENTER bf_unary,40,0
+ inc dword [rbp+C_DEPTH]
+ cmp dword [rbp+C_DEPTH],64
+ ja .syntax
+ mov r12d,[rbp+C_TOKEN]
+ cmp r12d,T_NUM
+ je .number
+ cmp r12d,T_LEN
+ je .length
+ cmp r12d,T_U8
+ jb .not_load
+ cmp r12d,T_U64
+ jbe .load
+.not_load:
+ cmp r12d,'('
+ je .parenthesis
+ cmp r12d,'!'
+ je .prefix
+ cmp r12d,'~'
+ je .prefix
+ cmp r12d,'-'
+ je .negative
+ cmp r12d,'+'
+ je .prefix
+ jmp .syntax
+.negative:
+ mov ecx,BF_CONST
+ xor eax,eax
+ call bf_emit
+.prefix:
+ call bf_lex
+ call bf_unary
+ cmp dword [rbp+C_ERROR],0
+ jne .done
+ cmp r12d,'+'
+ je .done
+ mov ecx,BF_NOT
+ cmp r12d,'!'
+ je .emit_unary
+ mov ecx,BF_INVERT
+ cmp r12d,'~'
+ je .emit_unary
+ mov ecx,BF_SUB
+.emit_unary:
+ xor eax,eax
+ call bf_emit
+ jmp .done
+.number:
+ mov rax,[rbp+C_VALUE]
+ mov ecx,BF_CONST
+ call bf_emit
+ call bf_lex
+ jmp .done
+.length:
+ mov ecx,BF_LEN
+ xor eax,eax
+ call bf_emit
+ call bf_lex
+ jmp .done
+.load:
+ sub r12d,257
+ call bf_lex
+ cmp dword [rbp+C_TOKEN],'('
+ jne .syntax
+ call bf_lex
+ cmp dword [rbp+C_TOKEN],T_NUM
+ jne .syntax
+ mov r13,[rbp+C_VALUE]
+ call bf_lex
+ cmp dword [rbp+C_TOKEN],')'
+ jne .syntax
+ call bf_lex
+ mov ecx,r12d
+ mov rax,r13
+ call bf_emit
+ jmp .done
+.parenthesis:
+ call bf_lex
+ mov ecx,1
+ call bf_expr
+ cmp dword [rbp+C_TOKEN],')'
+ jne .syntax
+ call bf_lex
+ jmp .done
+.syntax:
+ mov eax,3
+ call bf_error
+.done:
+ dec dword [rbp+C_DEPTH]
+ mov eax,[rbp+C_ERROR]
+BF_LEAVE bf_unary,40
+
+; Return precedence in ECX and opcode in EDX, or precedence zero.
+bf_binary:
+ xor ecx,ecx
+ xor edx,edx
+ cmp eax,'|'
+ je .or
+ cmp eax,'^'
+ je .xor
+ cmp eax,'&'
+ je .and
+ cmp eax,T_EQ
+ je .eq
+ cmp eax,T_NE
+ je .ne
+ cmp eax,'<'
+ je .lt
+ cmp eax,T_LE
+ je .le
+ cmp eax,'>'
+ je .gt
+ cmp eax,T_GE
+ je .ge
+ cmp eax,T_SHL
+ je .shl
+ cmp eax,T_SHR
+ je .shr
+ cmp eax,'+'
+ je .add
+ cmp eax,'-'
+ je .sub
+ ret
+.or: mov ecx,3
+ mov edx,BF_OR
+ ret
+.xor: mov ecx,4
+ mov edx,BF_XOR
+ ret
+.and: mov ecx,5
+ mov edx,BF_AND
+ ret
+.eq: mov ecx,6
+ mov edx,BF_EQ
+ ret
+.ne: mov ecx,6
+ mov edx,BF_NE
+ ret
+.lt: mov ecx,7
+ mov edx,BF_LT
+ ret
+.le: mov ecx,7
+ mov edx,BF_LE
+ ret
+.gt: mov ecx,7
+ mov edx,BF_GT
+ ret
+.ge: mov ecx,7
+ mov edx,BF_GE
+ ret
+.shl: mov ecx,8
+ mov edx,BF_SHL
+ ret
+.shr: mov ecx,8
+ mov edx,BF_SHR
+ ret
+.add: mov ecx,9
+ mov edx,BF_ADD
+ ret
+.sub: mov ecx,9
+ mov edx,BF_SUB
+ ret
 BF_NOEXEC_STACK

@@ -93,6 +93,14 @@ class Execute(unittest.TestCase):
         self.assertEqual(evaluate(b'bad'),(1,0))
 
 class Compile(unittest.TestCase):
+    def test_precedence_and_loads(self):
+        for text,value in (('1+2-3',0),('2+3<<2',20),('1|2&4',1),('1+2==3',1),('-1',(1<<64)-1),('~0',(1<<64)-1),('!!7',1),('u16be(1)',0x0203),('len-u8(0)',7),('(7^2)&3',1),('0xffffffffffffffff+1',0)):
+            status,data,position=compile_source(text)
+            self.assertEqual(status,0,(text,position))
+            self.assertEqual(verify(data)[0],0,text)
+            self.assertEqual(evaluate(data,bytes(range(1,9))),(0,value),text)
+        for text in ('1+','1 2','(1','1)','u8(1+2)','u8(-1)','u8()', '('*40+'1'+')'*40, '!'*70+'1'):
+            self.assertEqual(compile_source(text)[0],3,text)
     def test_literals(self):
         for text,value in (('0',0),('18446744073709551615',(1<<64)-1),('0xFF',255),('  len\n',3)):
             status,data,_=compile_source(text)

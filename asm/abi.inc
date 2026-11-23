@@ -15,8 +15,10 @@
 
 ; Eight preserved registers and an 8-mod-16 frame align nested calls.
 ; Frames include 32 bytes of Windows shadow space and stay below one page.
-%macro BF_ENTER 2
+%macro BF_ENTER 2-3 1
+%if %3
 global %1
+%endif
 %1:
  push rbx
 %1.p1:
