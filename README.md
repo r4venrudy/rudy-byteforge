@@ -44,6 +44,9 @@ The supplied synthetic capture contains two records. The example matches the fir
 
 ## Rule language
 
+Use `#` or `//` for line comments, through a newline or the explicit source end. A single `/` remains division. Comment bytes are opaque except NUL, which is rejected; comments still count toward the 8192-byte source limit.
+
+
 ```text
 len >= 54 && u16be(12) == 0x0800 && u8(23) == 6 && (u8(47) & 2) != 0
 len >= 4 && u32be(0) == 0x7f454c46

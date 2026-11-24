@@ -175,7 +175,30 @@ bf_lex:
  cmp al,10
  je .skip
  cmp al,13
+ je .skip
+ cmp al,'#'
+ je .comment
+ cmp al,'/'
  jne .start
+ lea rdx,[r9+1]
+ cmp rdx,r11
+ jae .start
+ cmp byte [r8+rdx],'/'
+ jne .start
+.comment:
+ mov [rbp+C_START],r9
+.comment_byte:
+ cmp r9,r11
+ jae .eof
+ movzx eax,byte [r8+r9]
+ test al,al
+ jz .bad
+ cmp al,10
+ je .skip
+ cmp al,13
+ je .skip
+ inc r9
+ jmp .comment_byte
 .skip:
  inc r9
  jmp .space

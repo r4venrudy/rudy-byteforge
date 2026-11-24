@@ -103,6 +103,21 @@ class Execute(unittest.TestCase):
 
 class Compile(unittest.TestCase):
 
+    def test_line_comments(self):
+        for text in ('# explain\n1+2 //tail','8/2 # quotient','1//tail','1/ /2'):
+            status,data,_=compile_source(text)
+            if text=='1/ /2':
+                self.assertEqual(status,3)
+            else:
+                self.assertEqual(status,0,text)
+                self.assertEqual(evaluate(data),(0,4 if text.startswith('8') else 3 if text.startswith('#') else 1))
+        for text in ('# comment only','// comment only','1 # bad\0comment','1 // bad\0comment'):
+            self.assertEqual(compile_source(text)[0],3)
+        for ending in ('#','//x'):
+            text='1'+(' '*(8192-1-len(ending)))+ending
+            self.assertEqual(compile_source(text)[0],0)
+
+
     def test_arithmetic_5(self):
         status,data,position=compile_source('17%3')
         self.assertEqual(status,0,position)

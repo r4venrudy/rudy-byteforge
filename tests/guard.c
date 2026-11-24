@@ -32,6 +32,12 @@ int main(void) {
     CHECK(bf_verify(memory+page-15,15,&verified)==BF_BAD_PROGRAM);
     memcpy(memory+page-3,"len",3);
     CHECK(bf_compile((const char *)memory+page-3,3,program,sizeof program,&compiled)==0);
+    const char *comments[]={"1#","1//","8/2//x","8/2#x"};
+    for(size_t i=0;i<sizeof comments/sizeof comments[0];i++) {
+        size_t n=strlen(comments[i]);memcpy(memory+page-n,comments[i],n);
+        CHECK(bf_compile((const char *)memory+page-n,n,program,sizeof program,&compiled)==BF_OK);
+    }
+    CHECK(bf_compile("len",3,program,sizeof program,&compiled)==BF_OK);
     uintptr_t args[5]={(uintptr_t)program,compiled.size,(uintptr_t)&verified,0,0};
     CHECK(!bf_abi_probe((void *)(uintptr_t)bf_verify,args));
     args[2]=(uintptr_t)(memory+page-8);args[3]=8;args[4]=(uintptr_t)&value;
