@@ -37,6 +37,8 @@ Opcode 28, `mul`, pops b and a and pushes their modular multiplication. Its imme
 
 Opcode 29, `udiv`, pops b and a and pushes their unsigned division. Its immediate is zero.
 
+Opcode 30, `umod`, pops b and a and pushes their unsigned remainder. Its immediate is zero.
+
 ## C API
 
 `include/byteforge.h` defines the public functions. The core's four exported functions are `bf_version`, `bf_compile`, `bf_verify` and `bf_eval`.

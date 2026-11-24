@@ -62,6 +62,7 @@ These examples inspect fixed offsets. The first is intended for ordinary Etherne
 | `+ - & ^ \| << >>` | Arithmetic/bit operations. Arithmetic wraps modulo 2^64. Shift counts at least 64 produce zero. |
 | `*` | Unsigned multiplication wraps modulo 2^64. |
 | `/` | Unsigned quotient; an executed zero divisor returns an arithmetic error. |
+| `%` | Unsigned remainder; an executed zero divisor returns an arithmetic error. |
 | `== != < <= > >=` | Unsigned comparisons producing 0 or 1. |
 | `! ~`, unary `+ -` | Logical NOT, bit inversion, identity and modular negation. |
 | `&& \|\|` | Left-to-right short-circuit boolean operations producing 0 or 1. |

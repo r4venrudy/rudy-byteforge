@@ -72,6 +72,8 @@ BF_ENTER bf_eval,568
  je .binary
  cmp ecx,BF_UDIV
  je .binary
+ cmp ecx,BF_UMOD
+ je .binary
  cmp ecx,BF_NOT
  je .unary
  cmp ecx,BF_INVERT
@@ -189,6 +191,8 @@ BF_ENTER bf_eval,568
  je .bf_mul
  cmp ecx,BF_UDIV
  je .bf_udiv
+ cmp ecx,BF_UMOD
+ je .bf_umod
  cmp ecx,BF_AND
  je .and
  cmp ecx,BF_OR
@@ -241,6 +245,14 @@ BF_ENTER bf_eval,568
  mov r9,rdx
  xor edx,edx
  div r9
+ jmp .replace
+.bf_umod:
+ test rdx,rdx
+ jz .arithmetic_error
+ mov r9,rdx
+ xor edx,edx
+ div r9
+ mov rax,rdx
  jmp .replace
 .and: and rax,rdx
  jmp .replace

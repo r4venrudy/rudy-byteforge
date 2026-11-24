@@ -49,6 +49,9 @@ def reference(node,data):
     if op=='/':
         if b==0: raise Arithmetic()
         return a//b
+    if op=='%':
+        if b==0: raise Arithmetic()
+        return a%b
     if op=='+': return (a+b)&MASK
     if op=='-': return (a-b)&MASK
     if op=='&': return a&b
@@ -65,10 +68,10 @@ def reference_valid(blob):
     for pc in range(count):
         if pc not in states: return False
         op=blob[16+pc*16];arg=struct.unpack_from('<Q',blob,24+pc*16)[0];depth=states[pc]
-        if any(blob[17+pc*16:24+pc*16]) or not 1<=op<=29: return False
+        if any(blob[17+pc*16:24+pc*16]) or not 1<=op<=30: return False
         if op not in (1,3,4,5,6,21,22,25,26,27) and arg: return False
         if op in (1,2,3,4,5,6,25,26,27): depth+=1
-        elif 7<=op<=19 or 28<=op<=29:
+        elif 7<=op<=19 or 28<=op<=30:
             if depth<2: return False
             depth-=1
         elif op in (20,24):

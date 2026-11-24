@@ -30,3 +30,4 @@
 %define BF_U64LE 27
 %define BF_MUL 28
 %define BF_UDIV 29
+%define BF_UMOD 30
