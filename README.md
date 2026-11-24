@@ -9,7 +9,7 @@ The Assembly core owns lexical scanning, unsigned-integer overflow checks, prece
 
 Repository language statistics focus on the shipped native core in `asm/`, `src/` and `include/`. The explicitly excluded `tests/` and `tools/` directories contain validation and build infrastructure. Binary fixtures are marked binary and source files use LF endings for consistent checkouts.
 
-**v0.1.0-preview · NASM Assembly · Windows x64 / Linux x64 · MIT**
+**v0.2.0-preview · NASM Assembly · Windows x64 / Linux x64 · MIT**
 
 ## What makes it useful
 
@@ -24,7 +24,7 @@ Repository language statistics focus on the shipped native core in `asm/`, `src/
 
 ## Quick start
 
-Download the archive for your architecture from the [preview release](https://github.com/r4venrudy/rudy-byteforge/releases/tag/v0.1.0-preview). Compare its SHA-256 with `SHA256SUMS.txt`, extract it, and use `bin/byteforge` on Linux or `bin/byteforge.exe` on Windows.
+Download the archive for your architecture from the [preview release](https://github.com/r4venrudy/rudy-byteforge/releases/tag/v0.2.0-preview). Compare its SHA-256 with `SHA256SUMS.txt`, extract it, and use `bin/byteforge` on Linux or `bin/byteforge.exe` on Windows.
 
 ```sh
 bin/byteforge compile examples/tcp-syn.bf tcp.bfg
@@ -83,6 +83,8 @@ Guard potentially short reads with `len` and `&&`. An executed out-of-bounds rea
 | `disasm program.bfg` | Print instruction indices, operation names and immediates. |
 | `run program.bfg input.bin` | Report the unsigned value and whether it is nonzero. |
 | `scan program.bfg capture.pcap` | Report packet/match/truncation counts and zero-based matching indices. |
+
+A closed output pipe or failed standard-output flush returns exit 2.
 
 Exit 0 means success/match, exit 1 means a successfully evaluated non-match, exit 2 means invalid arguments/files/program/source, exit 3 means an executed short read in `run`, and exit 4 means an executed zero divisor in `run`. `scan` counts short-input and arithmetic-error records separately and continues. Skipped branches do not evaluate a zero divisor. Malformed capture framing rejects the scan without a success report. JSON schemas use the `rudy.byteforge.*/v1` names shown in output.
 

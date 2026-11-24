@@ -1,6 +1,7 @@
 /* File/console interface only. Compiler, verifier and VM live in asm/. */
 #include "byteforge.h"
 #include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
@@ -82,10 +83,18 @@ done:
     free(packet);if(fclose(file)) result=2;return result;
 }
 
+static int finish(int result) {
+    if(fflush(stdout)==EOF||ferror(stdout)) return error("cannot complete standard output");
+    return result;
+}
+
 int main(int argc,char **argv) {
-    if(argc==2&&!strcmp(argv[1],"--version")) { puts("byteforge 0.1.0-preview");return 0; }
+#ifdef SIGPIPE
+    signal(SIGPIPE,SIG_IGN);
+#endif
+    if(argc==2&&!strcmp(argv[1],"--version")) { puts("byteforge 0.2.0-preview");return finish(0); }
     if(argc==2&&!strcmp(argv[1],"--help")) {
-        puts("ByteForge / verified binary rules in x86-64 Assembly\ncompile source.bf output.bfg\nverify program.bfg\ndisasm program.bfg\nrun program.bfg input.bin\nscan program.bfg capture.pcap\nCompile refuses to overwrite an existing output. Run/scan exit 1 when no match.");return 0;
+        puts("ByteForge / verified binary rules in x86-64 Assembly\ncompile source.bf output.bfg\nverify program.bfg\ndisasm program.bfg\nrun program.bfg input.bin\nscan program.bfg capture.pcap\nCompile refuses to overwrite an existing output. Run/scan exit 1 when no match.");return finish(0);
     }
     if(argc<3) return error("expected compile, verify, disasm, run or scan; see --help");
     if(!strcmp(argv[1],"compile")) {
@@ -100,7 +109,7 @@ int main(int argc,char **argv) {
         int bad=fwrite(output,1,info.size,file)!=info.size;
         if(fclose(file)) bad=1;
         if(bad) { remove(argv[3]);return error("cannot complete compiled output"); }
-        printf("{\"schema\":\"rudy.byteforge.compile/v1\",\"bytes\":%zu,\"instructions\":%u}\n",info.size,word32(output+8,0));return 0;
+        printf("{\"schema\":\"rudy.byteforge.compile/v1\",\"bytes\":%zu,\"instructions\":%u}\n",info.size,word32(output+8,0));return finish(0);
     }
     int inspect=!strcmp(argv[1],"verify"),disasm=!strcmp(argv[1],"disasm"),run=!strcmp(argv[1],"run"),capture=!strcmp(argv[1],"scan");
     if(!(inspect||disasm||run||capture)||argc!=((run||capture)?4:3)) return error("invalid command arguments");
@@ -111,7 +120,7 @@ int main(int argc,char **argv) {
     if(inspect) printf("{\"schema\":\"rudy.byteforge.verify/v1\",\"instructions\":%u,\"max_stack\":%u}\n",word32(program+8,0),info.max_stack);
     else if(disasm) {
         for(uint32_t i=0;i<word32(program+8,0);i++) printf("%04u  %-8s 0x%016" PRIx64 "\n",i,names[program[16+i*16]],word64(program+24+i*16));
-    } else if(capture) { int result=scan(program,size,argv[3]);free(program);return result; }
+    } else if(capture) { int result=scan(program,size,argv[3]);free(program);return finish(result); }
     else {
         size_t input_size=0;unsigned char *input=read_file(argv[3],MAX_INPUT,&input_size);
         if(!input) { free(program);return error("cannot read bounded input file"); }
@@ -120,7 +129,7 @@ int main(int argc,char **argv) {
         if(status==BF_ARITHMETIC) { free(program);fprintf(stderr,"byteforge: division by zero\n");return 4; }
         if(status) { free(program);return error("execution rejected"); }
         printf("{\"schema\":\"rudy.byteforge.run/v1\",\"value\":%" PRIu64 ",\"match\":%s}\n",value,value?"true":"false");
-        free(program);return value?0:1;
+        free(program);return finish(value?0:1);
     }
-    free(program);return ferror(stdout)?2:0;
+    free(program);return finish(0);
 }

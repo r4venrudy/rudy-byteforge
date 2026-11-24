@@ -8,7 +8,7 @@ import tarfile
 from zipfile import ZipFile,ZipInfo,ZIP_DEFLATED
 
 ROOT=Path(__file__).resolve().parents[1]
-VERSION='0.1.0-preview'
+VERSION='0.2.0-preview'
 def entries(platform):
     windows=platform=='windows-x64'
     files={'bin/'+('byteforge.exe' if windows else 'byteforge'):(ROOT/'build'/('byteforge.exe' if windows else 'byteforge'),0o755),

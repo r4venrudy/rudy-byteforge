@@ -1,5 +1,6 @@
 """Native CLI round trips and malformed-capture checks."""
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
@@ -12,7 +13,7 @@ def run(*args,code=0):
     result=subprocess.run([binary,*map(str,args)],capture_output=True,text=True,timeout=15)
     assert result.returncode==code,(args,result.returncode,result.stdout,result.stderr)
     checks+=1;return result.stdout
-assert run('--version').strip()=='byteforge 0.1.0-preview'
+assert run('--version').strip()=='byteforge 0.2.0-preview'
 assert 'Assembly' in run('--help')
 with TemporaryDirectory() as directory:
     folder=Path(directory);program=folder/'tcp.bfg'
@@ -54,4 +55,17 @@ with TemporaryDirectory() as directory:
     assert not json.loads(run('run',program,short,code=1))['match']
     source.write_text('u64be(0)');unguarded=folder/'unguarded.bfg'
     run('compile',source,unguarded);run('run',unguarded,short,code=3)
+
+
+    source.write_text('1 / (u8(0) - u8(0))');arithmetic=folder/'arithmetic.bfg'
+    run('compile',source,arithmetic);assert run('run',arithmetic,root/'examples/tcp.bin',code=4)==''
+    report=json.loads(run('scan',arithmetic,root/'examples/traffic.pcap',code=1))
+    assert report['arithmetic_errors']==2 and report['matches']==0
+
+# A reader that closes early must not receive a successful report exit status.
+read_end,write_end=os.pipe();os.close(read_end)
+with os.fdopen(write_end,'wb',buffering=0) as sink:
+    closed=subprocess.run([binary,'--version'],stdout=sink,stderr=subprocess.PIPE,timeout=15)
+assert closed.returncode==2,(closed.returncode,closed.stderr)
+checks+=1
 print(f'{checks} integration checks passed')

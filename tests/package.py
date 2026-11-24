@@ -11,7 +11,7 @@ from zipfile import ZipFile
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('packaging',ROOT/'tools/package.py');packaging=importlib.util.module_from_spec(spec);spec.loader.exec_module(packaging)
 platform=sys.argv[1];windows=platform=='windows-x64'
-name=f'byteforge-0.1.0-preview-{platform}{".zip" if windows else ".tar.gz"}'
+name=f'byteforge-0.2.0-preview-{platform}{".zip" if windows else ".tar.gz"}'
 archive=ROOT/'dist'/name
 assert (ROOT/'dist/SHA256SUMS.txt').read_text()==sha256(archive.read_bytes()).hexdigest()+'  '+name+'\n'
 expected=packaging.entries(platform)

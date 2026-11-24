@@ -39,6 +39,8 @@ Opcode 29, `udiv`, pops b and a and pushes their unsigned division. Its immediat
 
 Opcode 30, `umod`, pops b and a and pushes their unsigned remainder. Its immediate is zero.
 
+The 0.2.0 preview adds opcodes 25–30 while retaining bytecode header version 1 and the existing C ABI. Earlier engines reject these unsupported opcodes. `bf_version()` continues to identify API/format revision 1.
+
 ## C API
 
 `include/byteforge.h` defines the public functions. The core's four exported functions are `bf_version`, `bf_compile`, `bf_verify` and `bf_eval`.
@@ -60,7 +62,7 @@ if (status == BF_OK) {
 
 `bf_eval` requires a valid uint64 output pointer and resets it to zero before verification. A null input pointer is accepted only when input size is zero. Each evaluation re-verifies the program. Hold program and input bytes immutable throughout the call; this interface does not cache caller-owned memory or defend against a malicious embedding process.
 
-Status values are 0 (`BF_OK`), 1 (`BF_BAD_PROGRAM`), 2 (`BF_SHORT_INPUT`), 3 (`BF_SYNTAX`), 4 (`BF_CAPACITY`) 5 (`BF_ARGUMENT`) and 6 (`BF_ARITHMETIC`). A zero divisor returns `BF_ARITHMETIC` with the output value zero; it never invokes a hardware divide by zero. Guest return values are separate from status. Any nonzero return value is a match in the CLI.
+Status values are 0 (`BF_OK`), 1 (`BF_BAD_PROGRAM`), 2 (`BF_SHORT_INPUT`), 3 (`BF_SYNTAX`), 4 (`BF_CAPACITY`), 5 (`BF_ARGUMENT`) and 6 (`BF_ARITHMETIC`). A zero divisor returns `BF_ARITHMETIC` with the output value zero; it never invokes a hardware divide by zero. Guest return values are separate from status. Any nonzero return value is a match in the CLI.
 
 ## Native boundaries
 
