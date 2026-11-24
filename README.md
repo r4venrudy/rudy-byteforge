@@ -56,6 +56,7 @@ These examples inspect fixed offsets. The first is intended for ordinary Etherne
 | --- | --- |
 | `123`, `0xff`, `len` | Unsigned 64-bit decimal/hexadecimal values and captured input length. Leading-zero numbers remain decimal. |
 | `u8(n)`, `u16be(n)`, `u32be(n)`, `u64be(n)` | Read at an unsigned literal offset; multi-byte values are big-endian. |
+| `u16le(n)` | Read 2 bytes at an unsigned literal offset, interpreted little-endian. |
 | `+ - & ^ \| << >>` | Arithmetic/bit operations. Arithmetic wraps modulo 2^64. Shift counts at least 64 produce zero. |
 | `== != < <= > >=` | Unsigned comparisons producing 0 or 1. |
 | `! ~`, unary `+ -` | Logical NOT, bit inversion, identity and modular negation. |

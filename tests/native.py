@@ -102,6 +102,18 @@ class Execute(unittest.TestCase):
         self.assertEqual(evaluate(b'bad'),(1,0))
 
 class Compile(unittest.TestCase):
+
+    def test_little_endian_16(self):
+        status,data,position=compile_source('u16le(1)')
+        self.assertEqual(status,0,position)
+        self.assertEqual(verify(data)[0],0)
+        for size in range(11):
+            payload=bytes(range(1,size+1))
+            expected=(0,int.from_bytes(payload[1:1+2],'little')) if size>=1+2 else (2,0)
+            self.assertEqual(evaluate(data,payload),expected)
+            self.assertEqual(evaluate(program((25,1),(23,0)),payload),expected)
+        self.assertEqual(evaluate(program((25,(1<<64)-1),(23,0)),b'abcdefgh'),(2,0))
+
     def test_capacity_and_reentrancy(self):
         for capacity,status in ((0,4),(15,4),(16,4),(47,4),(48,0),(49,0)):
             buffer=C.create_string_buffer(b'X'*96,96);info=CompileInfo()

@@ -27,6 +27,8 @@ A branch target must be greater than the current index and smaller than the inst
 
 The verifier propagates one byte of abstract stack depth per instruction through the forward control-flow graph. No fixed-point loop is needed because all edges move forward. Execution separately validates stack operations, branch targets, read bounds and instruction fuel. Loads check `offset <= size` and `width <= size - offset` before dereferencing, avoiding offset-addition overflow.
 
+Opcode 25, `u16le`, pushes a little-endian 16-bit value at its literal offset. Its stack and bounds rules match the other loads. Older engines reject this newly supported opcode.
+
 ## C API
 
 `include/byteforge.h` defines the public functions. The core's four exported functions are `bf_version`, `bf_compile`, `bf_verify` and `bf_eval`.
