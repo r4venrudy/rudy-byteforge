@@ -39,6 +39,17 @@ with TemporaryDirectory() as directory:
         data=struct.pack(endian+'IHHIIII',magic,2,4,0,0,65535,1)+struct.pack(endian+'IIII',0,1,len(packet),len(packet))+packet
         path=folder/'portable.pcap';path.write_bytes(data)
         assert json.loads(run('scan',program,path))['matches']==1
+
+    for endian,magic in (('<',0xa1b2c3d4),('>',0xa1b2c3d4),('<',0xa1b23c4d),('>',0xa1b23c4d)):
+        for network,fcs in ((1, None),(1|0x24000000,4),(1|0x20000000,None),(1|0x04000000,0),(1|0xf4000000,30)):
+            data=struct.pack(endian+'IHHIIII',magic,2,4,123,456,65535,network)+struct.pack(endian+'IIII',0,1,len(packet),len(packet))+packet
+            path=folder/'fcs.pcap';path.write_bytes(data)
+            report=json.loads(run('scan',program,path))
+            assert report['link_type']==1 and report['fcs_bytes']==fcs,report
+            assert report['raw_link_type']==network
+        for reserved in (0x00010000,0x02000000,0x08000000):
+            path.write_bytes(struct.pack(endian+'IHHIIII',magic,2,4,0,0,65535,1|reserved))
+            assert run('scan',program,path,code=2)==''
     short=folder/'short.bin';short.write_bytes(b'x')
     assert not json.loads(run('run',program,short,code=1))['match']
     source.write_text('u64be(0)');unguarded=folder/'unguarded.bfg'

@@ -37,7 +37,7 @@ bin/byteforge scan tcp.bfg examples/traffic.pcap
 The supplied synthetic capture contains two records. The example matches the first:
 
 ```json
-{"schema":"rudy.byteforge.scan/v1","link_type":1,"packets":2,"matches":1,"short_inputs":0,"arithmetic_errors":0,"indices":[0],"indices_truncated":false}
+{"schema":"rudy.byteforge.scan/v1","link_type":1,"packets":2,"matches":1,"short_inputs":0,"arithmetic_errors":0,"raw_link_type":1,"fcs_bytes":null,"indices":[0],"indices_truncated":false}
 ```
 
 `compile` creates a new output file and preserves an existing file at that path. Choose a new name when compiling again. Inputs and captures are read locally; commands never transmit packets or execute captured content.
@@ -105,6 +105,8 @@ Validation includes 2500 seeded expression comparisons against an independent Py
 ## Analysis boundaries
 
 Programs contain at most 1024 fixed-size instructions and use at most 64 operand values. The compiler accepts at most 8192 source bytes and 64 active parser frames. Runtime fuel is at most the program's instruction count. The core uses no heap allocation, mutable global state, system calls or executable output memory.
+
+The classic-PCAP report separates the lower 16-bit `link_type` from `raw_link_type` and reports `fcs_bytes` when the header presence bit is set; otherwise it reports null. Reserved link-word bits are rejected. FCS bytes remain part of the captured input; no FCS verification or stripping is performed. This follows the [libpcap savefile format](https://github.com/the-tcpdump-group/libpcap/blob/master/pcap-savefile.manfile.in).
 
 The C file interface limits single binary inputs to 16 MiB. The classic-PCAP adapter accepts snapshots up to 16 MiB, captures up to 256 MiB and one million records. It validates framing and length fields, not all packet protocols or checksums. PCAPNG, live capture and automatic protocol dissection are outside this preview. Matching indices are capped at 1024; omitted indices are explicitly reported.
 

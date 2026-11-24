@@ -43,7 +43,9 @@ static int scan(const unsigned char *program,size_t program_size,const char *pat
     else goto invalid;
     uint32_t version=word32(header+4,big);
     if(version!=(big?0x00020004u:0x00040002u)) goto invalid;
-    uint32_t snap=word32(header+16,big),link=word32(header+20,big);
+    uint32_t snap=word32(header+16,big),network=word32(header+20,big);
+    if(network&0x0bff0000u) goto invalid;
+    uint32_t link=network&0xffffu;
     if(!snap||snap>MAX_INPUT) goto invalid;
     packet=malloc(snap);
     if(!packet) goto invalid;
@@ -64,7 +66,12 @@ static int scan(const unsigned char *program,size_t program_size,const char *pat
         else if(value) { matches++;if(reported<1024) indices[reported++]=(uint32_t)packets; }
         packets++;
     }
-    printf("{\"schema\":\"rudy.byteforge.scan/v1\",\"link_type\":%u,\"packets\":%" PRIu64 ",\"matches\":%" PRIu64 ",\"short_inputs\":%" PRIu64 ",\"arithmetic_errors\":%" PRIu64 ",\"indices\":[",link,packets,matches,shorts,arithmetic);
+    printf("{\"schema\":\"rudy.byteforge.scan/v1\",\"link_type\":%u,\"packets\":%" PRIu64 ",\"matches\":%" PRIu64 ",\"short_inputs\":%" PRIu64 ",\"arithmetic_errors\":%" PRIu64 "",link,packets,matches,shorts,arithmetic);
+    /* FCS length is metadata; packet bytes are retained exactly as captured. */
+    printf(",\"raw_link_type\":%u,\"fcs_bytes\":",network);
+    if(network&0x04000000u) printf("%u",(network>>28)*2u);
+    else fputs("null",stdout);
+    fputs(",\"indices\":[",stdout);
     for(size_t i=0;i<reported;i++) printf("%s%u",i?",":"",indices[i]);
     printf("],\"indices_truncated\":%s}\n",matches>reported?"true":"false");
     result=matches?0:1;
