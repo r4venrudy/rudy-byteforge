@@ -28,3 +28,4 @@
 %define BF_U16LE 25
 %define BF_U32LE 26
 %define BF_U64LE 27
+%define BF_MUL 28

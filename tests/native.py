@@ -103,6 +103,18 @@ class Execute(unittest.TestCase):
 
 class Compile(unittest.TestCase):
 
+    def test_arithmetic_3(self):
+        status,data,position=compile_source('3*7')
+        self.assertEqual(status,0,position)
+        self.assertEqual(evaluate(data),(0,21))
+        status,data,position=compile_source('2+3*4')
+        self.assertEqual(status,0,position)
+        self.assertEqual(evaluate(data),(0,14))
+        status,data,position=compile_source('0xffffffffffffffff*2')
+        self.assertEqual(status,0,position)
+        self.assertEqual(evaluate(data),(0,18446744073709551614))
+
+
     def test_little_endian_64(self):
         status,data,position=compile_source('u64le(1)')
         self.assertEqual(status,0,position)

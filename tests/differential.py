@@ -14,15 +14,16 @@ rng=random.Random(0xB17EF09);MASK=(1<<64)-1
 class Short(Exception): pass
 def make(depth):
     if not depth or rng.random()<.25:
-        kind=rng.choice(('const','len','load'))
+        kind=rng.choice(('const','len','load','u16le','u32le','u64le'))
         return (kind,rng.getrandbits(64) if kind=='const' else rng.randrange(45))
     if rng.random()<.15: return (rng.choice(('!','~','neg')),make(depth-1))
-    return (rng.choice(('+','-','&','|','^','<<','>>','==','!=','<','<=','>','>=','&&','||')),make(depth-1),make(depth-1))
+    return (rng.choice(('*','+','-','&','|','^','<<','>>','==','!=','<','<=','>','>=','&&','||')),make(depth-1),make(depth-1))
 def source(node):
     op=node[0]
     if op=='const': return hex(node[1])
     if op=='len': return 'len'
     if op=='load': return f'u8({node[1]})'
+    if op in ('u16le','u32le','u64le'): return f'{op}({node[1]})'
     if len(node)==2: return '('+('-' if op=='neg' else op)+source(node[1])+')'
     return '('+source(node[1])+op+source(node[2])+')'
 def reference(node,data):
@@ -32,6 +33,10 @@ def reference(node,data):
     if op=='load':
         if node[1]>=len(data): raise Short()
         return data[node[1]]
+    if op in ('u16le','u32le','u64le'):
+        width={'u16le':2,'u32le':4,'u64le':8}[op]
+        if node[1]+width>len(data): raise Short()
+        return int.from_bytes(data[node[1]:node[1]+width],'little')
     a=reference(node[1],data)
     if op=='!': return int(not a)
     if op=='~': return (~a)&MASK
@@ -39,6 +44,7 @@ def reference(node,data):
     if op=='&&': return int(bool(a) and bool(reference(node[2],data)))
     if op=='||': return int(bool(a) or bool(reference(node[2],data)))
     b=reference(node[2],data)
+    if op=='*': return (a*b)&MASK
     if op=='+': return (a+b)&MASK
     if op=='-': return (a-b)&MASK
     if op=='&': return a&b
@@ -55,10 +61,10 @@ def reference_valid(blob):
     for pc in range(count):
         if pc not in states: return False
         op=blob[16+pc*16];arg=struct.unpack_from('<Q',blob,24+pc*16)[0];depth=states[pc]
-        if any(blob[17+pc*16:24+pc*16]) or not 1<=op<=27: return False
+        if any(blob[17+pc*16:24+pc*16]) or not 1<=op<=28: return False
         if op not in (1,3,4,5,6,21,22,25,26,27) and arg: return False
         if op in (1,2,3,4,5,6,25,26,27): depth+=1
-        elif 7<=op<=19:
+        elif 7<=op<=19 or 28<=op<=28:
             if depth<2: return False
             depth-=1
         elif op in (20,24):

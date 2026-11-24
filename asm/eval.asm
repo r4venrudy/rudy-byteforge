@@ -68,6 +68,8 @@ BF_ENTER bf_eval,568
  jb .invalid
  cmp ecx,BF_GE
  jbe .binary
+ cmp ecx,BF_MUL
+ je .binary
  cmp ecx,BF_NOT
  je .unary
  cmp ecx,BF_INVERT
@@ -181,6 +183,8 @@ BF_ENTER bf_eval,568
  dec esi
  mov rdx,[rbp+rsi*8]
  mov rax,[rbp+rsi*8-8]
+ cmp ecx,BF_MUL
+ je .bf_mul
  cmp ecx,BF_AND
  je .and
  cmp ecx,BF_OR
@@ -223,6 +227,9 @@ BF_ENTER bf_eval,568
 .le: movzx eax,r11b
  jmp .replace
 .gt: movzx eax,al
+ jmp .replace
+.bf_mul:
+ imul rax,rdx
  jmp .replace
 .and: and rax,rdx
  jmp .replace

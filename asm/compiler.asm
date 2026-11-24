@@ -333,6 +333,8 @@ bf_lex:
  je .token
  cmp al,'^'
  je .token
+ cmp al,'*'
+ je .token
  cmp al,'~'
  je .token
  jmp .bad
@@ -584,6 +586,8 @@ BF_LEAVE bf_unary,40
 bf_binary:
  xor ecx,ecx
  xor edx,edx
+ cmp eax,'*'
+ je .bf_mul
  cmp eax,T_OR
  je .logical_or
  cmp eax,T_AND
@@ -659,6 +663,10 @@ bf_binary:
  ret
 .logical_and: mov ecx,2
  mov edx,100
+ ret
+
+.bf_mul: mov ecx,10
+ mov edx,BF_MUL
  ret
 
 ; Internal helpers use only volatile registers and the immutable context base.

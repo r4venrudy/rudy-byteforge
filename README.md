@@ -60,11 +60,12 @@ These examples inspect fixed offsets. The first is intended for ordinary Etherne
 | `u32le(n)` | Read 4 bytes at an unsigned literal offset, interpreted little-endian. |
 | `u64le(n)` | Read 8 bytes at an unsigned literal offset, interpreted little-endian. |
 | `+ - & ^ \| << >>` | Arithmetic/bit operations. Arithmetic wraps modulo 2^64. Shift counts at least 64 produce zero. |
+| `*` | Unsigned multiplication wraps modulo 2^64. |
 | `== != < <= > >=` | Unsigned comparisons producing 0 or 1. |
 | `! ~`, unary `+ -` | Logical NOT, bit inversion, identity and modular negation. |
 | `&& \|\|` | Left-to-right short-circuit boolean operations producing 0 or 1. |
 
-Precedence from lowest to highest is `||`, `&&`, `|`, `^`, `&`, equality, ordering, shifts, addition/subtraction, then unary operators. Binary operations are left-associative. Parentheses override precedence. Load offsets are literals, not computed expressions. Strings, variables, loops, function definitions, multiplication and division are outside this language.
+Precedence from lowest to highest is `||`, `&&`, `|`, `^`, `&`, equality, ordering, shifts, addition/subtraction, multiplication/division/remainder, then unary operators. Binary operations are left-associative. Parentheses override precedence. Load offsets are literals, not computed expressions. Strings, variables, loops and function definitions are outside this language.
 
 Guard potentially short reads with `len` and `&&`. An executed out-of-bounds read returns `BF_SHORT_INPUT`; it does not quietly turn into a match or read outside the supplied span. `0 && u64be(0)` succeeds with value zero on empty input because the load is skipped.
 

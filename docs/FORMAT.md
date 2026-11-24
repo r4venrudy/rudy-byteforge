@@ -33,6 +33,8 @@ Opcode 26, `u32le`, pushes a little-endian 32-bit value at its literal offset. I
 
 Opcode 27, `u64le`, pushes a little-endian 64-bit value at its literal offset. Its stack and bounds rules match the other loads. Older engines reject this newly supported opcode.
 
+Opcode 28, `mul`, pops b and a and pushes their modular multiplication. Its immediate is zero.
+
 ## C API
 
 `include/byteforge.h` defines the public functions. The core's four exported functions are `bf_version`, `bf_compile`, `bf_verify` and `bf_eval`.
