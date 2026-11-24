@@ -37,7 +37,7 @@ bin/byteforge scan tcp.bfg examples/traffic.pcap
 The supplied synthetic capture contains two records. The example matches the first:
 
 ```json
-{"schema":"rudy.byteforge.scan/v1","link_type":1,"packets":2,"matches":1,"short_inputs":0,"indices":[0],"indices_truncated":false}
+{"schema":"rudy.byteforge.scan/v1","link_type":1,"packets":2,"matches":1,"short_inputs":0,"arithmetic_errors":0,"indices":[0],"indices_truncated":false}
 ```
 
 `compile` creates a new output file and preserves an existing file at that path. Choose a new name when compiling again. Inputs and captures are read locally; commands never transmit packets or execute captured content.
@@ -61,6 +61,7 @@ These examples inspect fixed offsets. The first is intended for ordinary Etherne
 | `u64le(n)` | Read 8 bytes at an unsigned literal offset, interpreted little-endian. |
 | `+ - & ^ \| << >>` | Arithmetic/bit operations. Arithmetic wraps modulo 2^64. Shift counts at least 64 produce zero. |
 | `*` | Unsigned multiplication wraps modulo 2^64. |
+| `/` | Unsigned quotient; an executed zero divisor returns an arithmetic error. |
 | `== != < <= > >=` | Unsigned comparisons producing 0 or 1. |
 | `! ~`, unary `+ -` | Logical NOT, bit inversion, identity and modular negation. |
 | `&& \|\|` | Left-to-right short-circuit boolean operations producing 0 or 1. |
@@ -79,7 +80,7 @@ Guard potentially short reads with `len` and `&&`. An executed out-of-bounds rea
 | `run program.bfg input.bin` | Report the unsigned value and whether it is nonzero. |
 | `scan program.bfg capture.pcap` | Report packet/match/truncation counts and zero-based matching indices. |
 
-Exit 0 means success/match, exit 1 means a successfully evaluated non-match, exit 2 means invalid arguments/files/program/source, and exit 3 means an executed short read in `run`. `scan` counts short-input records separately and continues. Malformed capture framing rejects the scan without a success report. JSON schemas use the `rudy.byteforge.*/v1` names shown in output.
+Exit 0 means success/match, exit 1 means a successfully evaluated non-match, exit 2 means invalid arguments/files/program/source, exit 3 means an executed short read in `run`, and exit 4 means an executed zero divisor in `run`. `scan` counts short-input and arithmetic-error records separately and continues. Skipped branches do not evaluate a zero divisor. Malformed capture framing rejects the scan without a success report. JSON schemas use the `rudy.byteforge.*/v1` names shown in output.
 
 ## Build and test
 

@@ -76,6 +76,8 @@ BF_ENTER bf_verify,1080
  jnz .bad_pc
  cmp ecx,BF_MUL
  je .binary
+ cmp ecx,BF_UDIV
+ je .binary
  cmp ecx,BF_LEN
  je .push
  cmp ecx,BF_AND

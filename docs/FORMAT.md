@@ -35,6 +35,8 @@ Opcode 27, `u64le`, pushes a little-endian 64-bit value at its literal offset. I
 
 Opcode 28, `mul`, pops b and a and pushes their modular multiplication. Its immediate is zero.
 
+Opcode 29, `udiv`, pops b and a and pushes their unsigned division. Its immediate is zero.
+
 ## C API
 
 `include/byteforge.h` defines the public functions. The core's four exported functions are `bf_version`, `bf_compile`, `bf_verify` and `bf_eval`.
@@ -56,7 +58,7 @@ if (status == BF_OK) {
 
 `bf_eval` requires a valid uint64 output pointer and resets it to zero before verification. A null input pointer is accepted only when input size is zero. Each evaluation re-verifies the program. Hold program and input bytes immutable throughout the call; this interface does not cache caller-owned memory or defend against a malicious embedding process.
 
-Status values are 0 (`BF_OK`), 1 (`BF_BAD_PROGRAM`), 2 (`BF_SHORT_INPUT`), 3 (`BF_SYNTAX`), 4 (`BF_CAPACITY`) and 5 (`BF_ARGUMENT`). Guest return values are separate from status. Any nonzero return value is a match in the CLI.
+Status values are 0 (`BF_OK`), 1 (`BF_BAD_PROGRAM`), 2 (`BF_SHORT_INPUT`), 3 (`BF_SYNTAX`), 4 (`BF_CAPACITY`) 5 (`BF_ARGUMENT`) and 6 (`BF_ARITHMETIC`). A zero divisor returns `BF_ARITHMETIC` with the output value zero; it never invokes a hardware divide by zero. Guest return values are separate from status. Any nonzero return value is a match in the CLI.
 
 ## Native boundaries
 

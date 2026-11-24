@@ -103,6 +103,24 @@ class Execute(unittest.TestCase):
 
 class Compile(unittest.TestCase):
 
+    def test_arithmetic_4(self):
+        status,data,position=compile_source('17/3')
+        self.assertEqual(status,0,position)
+        self.assertEqual(evaluate(data),(0,5))
+        status,data,position=compile_source('0xffffffffffffffff/2')
+        self.assertEqual(status,0,position)
+        self.assertEqual(evaluate(data),(0,9223372036854775807))
+        status,data,position=compile_source('2+12/3')
+        self.assertEqual(status,0,position)
+        self.assertEqual(evaluate(data),(0,6))
+        status,data,_=compile_source('1/0')
+        self.assertEqual(status,0)
+        self.assertEqual(evaluate(data),(6,0))
+        status,data,_=compile_source('0 && (1/0)')
+        self.assertEqual(status,0)
+        self.assertEqual(evaluate(data),(0,0))
+
+
     def test_arithmetic_3(self):
         status,data,position=compile_source('3*7')
         self.assertEqual(status,0,position)

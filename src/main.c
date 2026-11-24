@@ -26,7 +26,7 @@ static uint64_t word64(const unsigned char *p) {
     return word32(p,0)|((uint64_t)word32(p+4,0)<<32);
 }
 static int error(const char *message) { fprintf(stderr,"byteforge: %s\n",message);return 2; }
-static const char *names[]={"invalid","const","len","u8","u16be","u32be","u64be","and","or","xor","shl","shr","add","sub","eq","ne","lt","le","gt","ge","not","jump","jz","ret","invert","u16le","u32le","u64le","mul"};
+static const char *names[]={"invalid","const","len","u8","u16be","u32be","u64be","and","or","xor","shl","shr","add","sub","eq","ne","lt","le","gt","ge","not","jump","jz","ret","invert","u16le","u32le","u64le","mul","udiv"};
 
 static int scan(const unsigned char *program,size_t program_size,const char *path) {
     FILE *file=fopen(path,"rb");
@@ -47,7 +47,7 @@ static int scan(const unsigned char *program,size_t program_size,const char *pat
     if(!snap||snap>MAX_INPUT) goto invalid;
     packet=malloc(snap);
     if(!packet) goto invalid;
-    uint64_t consumed=24,packets=0,matches=0,shorts=0;
+    uint64_t consumed=24,packets=0,matches=0,shorts=0,arithmetic=0;
     uint32_t indices[1024];size_t reported=0;
     for(;;) {
         unsigned char record[16];size_t got=fread(record,1,16,file);
@@ -59,11 +59,12 @@ static int scan(const unsigned char *program,size_t program_size,const char *pat
         if(consumed>MAX_CAPTURE||fread(packet,1,captured,file)!=captured) goto invalid;
         uint64_t value=0;int status=bf_eval(program,program_size,packet,captured,&value);
         if(status==BF_SHORT_INPUT) shorts++;
+        else if(status==BF_ARITHMETIC) arithmetic++;
         else if(status!=BF_OK) goto invalid;
         else if(value) { matches++;if(reported<1024) indices[reported++]=(uint32_t)packets; }
         packets++;
     }
-    printf("{\"schema\":\"rudy.byteforge.scan/v1\",\"link_type\":%u,\"packets\":%" PRIu64 ",\"matches\":%" PRIu64 ",\"short_inputs\":%" PRIu64 ",\"indices\":[",link,packets,matches,shorts);
+    printf("{\"schema\":\"rudy.byteforge.scan/v1\",\"link_type\":%u,\"packets\":%" PRIu64 ",\"matches\":%" PRIu64 ",\"short_inputs\":%" PRIu64 ",\"arithmetic_errors\":%" PRIu64 ",\"indices\":[",link,packets,matches,shorts,arithmetic);
     for(size_t i=0;i<reported;i++) printf("%s%u",i?",":"",indices[i]);
     printf("],\"indices_truncated\":%s}\n",matches>reported?"true":"false");
     result=matches?0:1;
@@ -109,6 +110,7 @@ int main(int argc,char **argv) {
         if(!input) { free(program);return error("cannot read bounded input file"); }
         uint64_t value=0;status=bf_eval(program,size,input,input_size,&value);free(input);
         if(status==BF_SHORT_INPUT) { free(program);fprintf(stderr,"byteforge: rule read beyond captured input\n");return 3; }
+        if(status==BF_ARITHMETIC) { free(program);fprintf(stderr,"byteforge: division by zero\n");return 4; }
         if(status) { free(program);return error("execution rejected"); }
         printf("{\"schema\":\"rudy.byteforge.run/v1\",\"value\":%" PRIu64 ",\"match\":%s}\n",value,value?"true":"false");
         free(program);return value?0:1;

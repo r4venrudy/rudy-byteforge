@@ -12,6 +12,7 @@ core.bf_verify.argtypes=[C.c_void_p,C.c_size_t,C.c_void_p]
 core.bf_eval.argtypes=[C.c_void_p,C.c_size_t,C.c_void_p,C.c_size_t,C.POINTER(C.c_uint64)]
 rng=random.Random(0xB17EF09);MASK=(1<<64)-1
 class Short(Exception): pass
+class Arithmetic(Exception): pass
 def make(depth):
     if not depth or rng.random()<.25:
         kind=rng.choice(('const','len','load','u16le','u32le','u64le'))
@@ -45,6 +46,9 @@ def reference(node,data):
     if op=='||': return int(bool(a) or bool(reference(node[2],data)))
     b=reference(node[2],data)
     if op=='*': return (a*b)&MASK
+    if op=='/':
+        if b==0: raise Arithmetic()
+        return a//b
     if op=='+': return (a+b)&MASK
     if op=='-': return (a-b)&MASK
     if op=='&': return a&b
@@ -61,10 +65,10 @@ def reference_valid(blob):
     for pc in range(count):
         if pc not in states: return False
         op=blob[16+pc*16];arg=struct.unpack_from('<Q',blob,24+pc*16)[0];depth=states[pc]
-        if any(blob[17+pc*16:24+pc*16]) or not 1<=op<=28: return False
+        if any(blob[17+pc*16:24+pc*16]) or not 1<=op<=29: return False
         if op not in (1,3,4,5,6,21,22,25,26,27) and arg: return False
         if op in (1,2,3,4,5,6,25,26,27): depth+=1
-        elif 7<=op<=19 or 28<=op<=28:
+        elif 7<=op<=19 or 28<=op<=29:
             if depth<2: return False
             depth-=1
         elif op in (20,24):
@@ -94,6 +98,7 @@ for index in range(2500):
     payload=rng.randbytes(rng.randrange(41));actual=C.c_uint64(123)
     try: expected=(0,reference(tree,payload))
     except Short: expected=(2,0)
+    except Arithmetic: expected=(6,0)
     result=core.bf_eval(blob,len(blob),payload,len(payload),C.byref(actual))
     assert (result,actual.value)==expected,(text,payload.hex(),expected,result,actual.value)
     if index<100: corpus.append(blob)
