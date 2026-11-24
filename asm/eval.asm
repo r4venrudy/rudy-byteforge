@@ -58,6 +58,8 @@ BF_ENTER bf_eval,568
  je .load
  cmp ecx,BF_U32LE
  je .load
+ cmp ecx,BF_U64LE
+ je .load
  cmp ecx,BF_JUMP
  je .jump
  cmp ecx,BF_JZ
@@ -85,6 +87,11 @@ BF_ENTER bf_eval,568
  mov rax,rbx
  jmp .push
 .load:
+ cmp ecx,BF_U64LE
+ jne .not_u64le_width
+ mov edx,8
+ jmp .bounds
+.not_u64le_width:
  cmp ecx,BF_U32LE
  jne .not_u32le_width
  mov edx,4
@@ -113,6 +120,8 @@ BF_ENTER bf_eval,568
  cmp r9,rdx
  jb .short
  lea rdx,[r14+r8]
+ cmp ecx,BF_U64LE
+ je .read_u64le
  cmp ecx,BF_U32LE
  je .read_u32le
  cmp ecx,BF_U16LE
@@ -131,6 +140,9 @@ BF_ENTER bf_eval,568
  jmp .push
 .read_u32le:
  mov eax,[rdx]
+ jmp .push
+.read_u64le:
+ mov rax,[rdx]
  jmp .push
 .byte:
  movzx eax,byte [rdx]

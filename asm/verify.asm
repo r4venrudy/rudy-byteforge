@@ -62,6 +62,8 @@ BF_ENTER bf_verify,1080
  cmp ecx,BF_U64BE
  jbe .push
 .not_load:
+ cmp ecx,BF_U64LE
+ je .push
  cmp ecx,BF_U32LE
  je .push
  cmp ecx,BF_U16LE
