@@ -31,6 +31,7 @@ extern bf_verify
 %define T_SHR 269
 %define T_AND 270
 %define T_OR 271
+%define T_U32LE 273
 %define T_U16LE 272
 section .text
 BF_ENTER bf_compile,168
@@ -268,6 +269,8 @@ bf_lex:
  jne .bad
  cmp dword [r8+rdx],'u16l'
  je .id_u16le
+ cmp dword [r8+rdx],'u32l'
+ je .id_u32le
  cmp dword [r8+rdx],'u16b'
  je .id_u16
  cmp dword [r8+rdx],'u32b'
@@ -281,6 +284,8 @@ bf_lex:
 .id_u32: mov eax,T_U32
  jmp .token
 .id_u16le: mov eax,T_U16LE
+ jmp .token
+.id_u32le: mov eax,T_U32LE
  jmp .token
 .id_u8:
  cmp word [r8+rdx],'u8'
@@ -476,6 +481,8 @@ BF_ENTER bf_unary,40,0
  cmp r12d,T_U64
  jbe .load
 .not_load:
+ cmp r12d,T_U32LE
+ je .load_u32le
  cmp r12d,T_U16LE
  je .load_u16le
  cmp r12d,'('
@@ -525,6 +532,9 @@ BF_ENTER bf_unary,40,0
  jmp .done
 .load_u16le:
  mov r12d,BF_U16LE
+ jmp .load_arguments
+.load_u32le:
+ mov r12d,BF_U32LE
  jmp .load_arguments
 .load:
  sub r12d,257

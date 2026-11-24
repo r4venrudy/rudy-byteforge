@@ -26,7 +26,7 @@ static uint64_t word64(const unsigned char *p) {
     return word32(p,0)|((uint64_t)word32(p+4,0)<<32);
 }
 static int error(const char *message) { fprintf(stderr,"byteforge: %s\n",message);return 2; }
-static const char *names[]={"invalid","const","len","u8","u16be","u32be","u64be","and","or","xor","shl","shr","add","sub","eq","ne","lt","le","gt","ge","not","jump","jz","ret","invert","u16le"};
+static const char *names[]={"invalid","const","len","u8","u16be","u32be","u64be","and","or","xor","shl","shr","add","sub","eq","ne","lt","le","gt","ge","not","jump","jz","ret","invert","u16le","u32le"};
 
 static int scan(const unsigned char *program,size_t program_size,const char *path) {
     FILE *file=fopen(path,"rb");

@@ -103,6 +103,18 @@ class Execute(unittest.TestCase):
 
 class Compile(unittest.TestCase):
 
+    def test_little_endian_32(self):
+        status,data,position=compile_source('u32le(1)')
+        self.assertEqual(status,0,position)
+        self.assertEqual(verify(data)[0],0)
+        for size in range(11):
+            payload=bytes(range(1,size+1))
+            expected=(0,int.from_bytes(payload[1:1+4],'little')) if size>=1+4 else (2,0)
+            self.assertEqual(evaluate(data,payload),expected)
+            self.assertEqual(evaluate(program((26,1),(23,0)),payload),expected)
+        self.assertEqual(evaluate(program((26,(1<<64)-1),(23,0)),b'abcdefgh'),(2,0))
+
+
     def test_little_endian_16(self):
         status,data,position=compile_source('u16le(1)')
         self.assertEqual(status,0,position)

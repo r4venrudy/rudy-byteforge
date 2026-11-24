@@ -26,3 +26,4 @@
 %define BF_MAX_STACK 64
 %define BF_MAX_SOURCE 8192
 %define BF_U16LE 25
+%define BF_U32LE 26
